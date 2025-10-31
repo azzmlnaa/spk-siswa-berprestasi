@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Hasil SAW | SPK Siswa Berprestasi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body class="bg-gray-100 font-[Poppins] flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-900 text-gray-300 flex flex-col fixed h-full">
+    <div class="text-center text-white text-xl font-semibold py-5 border-b border-gray-700">
+      🧮 SPK Siswa
+    </div>
+    <nav class="flex-1 p-4 space-y-2">
+      <a href="index.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800">
+        <i class="bi bi-house"></i> Dashboard
+      </a>
+      <a href="siswa.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800">
+        <i class="bi bi-people"></i> Kelola Siswa
+      </a>
+      <a href="kriteria.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800">
+        <i class="bi bi-list-check"></i> Kelola Kriteria
+      </a>
+      <a href="nilai.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800">
+        <i class="bi bi-pencil-square"></i> Input Nilai
+      </a>
+      <a href="hasil.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-600 text-white">
+        <i class="bi bi-bar-chart"></i> Hasil SPK
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 ml-64">
+    <header class="bg-blue-600 text-white px-6 py-4 shadow flex items-center justify-between">
+      <h1 class="text-lg font-semibold flex items-center gap-2">
+        <i class="bi bi-bar-chart"></i> Hasil Perhitungan SAW
+      </h1>
+      <a href="login.html">
+    <button class="bg-blue-700 hover:bg-blue-800 px-4 py-1 rounded-lg text-sm">
+        Logout
+    </button>
+</a>
+    </header>
+    </header>
+
+    <main class="p-8 space-y-8">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold text-gray-800">📊 Ranking Siswa Berprestasi</h2>
+        <button id="btnCetakPDF" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+          <i class="bi bi-printer"></i> Cetak PDF
+        </button>
+      </div>
+
+      <!-- Area yang akan dicetak -->
+      <section id="hasilContainer" class="bg-white p-6 rounded-xl shadow">
+        <div class="text-center mb-4">
+          <h3 class="text-xl font-bold text-gray-700">Laporan Hasil Perhitungan SAW</h3>
+          <p class="text-sm text-gray-500">Sistem Pendukung Keputusan Siswa Berprestasi</p>
+          <p class="text-sm text-gray-500">Tanggal: <span id="tanggalCetak"></span></p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="table table-bordered w-full text-sm" id="tabelHasil">
+            <thead class="bg-gray-800 text-white text-center">
+              <tr>
+                <th>Ranking</th>
+                <th>Nama Siswa</th>
+                <th>Kelas</th>
+                <th>Nilai Akhir</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyHasil" class="bg-white text-center"></tbody>
+          </table>
+        </div>
+
+        <!-- Bagian tanda tangan -->
+        <div class="mt-12 flex justify-end pr-20">
+          <div class="text-center">
+            <p class="mb-1">Mengetahui,</p>
+            <p class="font-semibold">Kepala Sekolah</p>
+            <div style="height: 80px;"></div> <!-- ruang untuk tanda tangan -->
+            <p class="font-semibold underline">(_______________________)</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Script -->
+  <script>
+    // === Ambil dan tampilkan data hasil dari API ===
+    async function loadHasil() {
+      const tbody = document.getElementById("tbodyHasil");
+      try {
+        const response = await fetch("http://localhost:5000/api/hasil");
+        const data = await response.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4" class="text-center py-4 text-gray-500">
+                Tidak ada data hasil perhitungan.
+              </td>
+            </tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data
+          .map(
+            (item, index) => `
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-2 font-semibold">${index + 1}</td>
+                <td class="p-2">${item.nama_siswa}</td>
+                <td class="p-2">${item.kelas || "-"}</td>
+                <td class="p-2">${item.nilai_akhir.toFixed(4)}</td>
+              </tr>`
+          )
+          .join("");
+      } catch (err) {
+        console.error("Gagal memuat hasil:", err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center py-4 text-red-500">
+              Gagal memuat data hasil dari server.
+            </td>
+          </tr>`;
+      }
+    }
+
+    // === Fungsi Cetak PDF ===
+    document.getElementById("btnCetakPDF").addEventListener("click", async () => {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF("p", "pt", "a4");
+      const element = document.getElementById("hasilContainer");
+
+      // Sembunyikan tombol sementara
+      const btnCetak = document.getElementById("btnCetakPDF");
+      btnCetak.style.display = "none";
+
+      // Konversi div ke gambar
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgWidth = pageWidth - 60;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 30, 40, imgWidth, imgHeight);
+      pdf.save("Laporan_Hasil_SAW.pdf");
+
+      // Tampilkan tombol kembali
+      btnCetak.style.display = "inline-block";
+    });
+
+    // Tampilkan tanggal cetak
+    document.getElementById("tanggalCetak").innerText = new Date().toLocaleDateString("id-ID");
+
+    loadHasil();
+  </script>
+</body>
+</html>

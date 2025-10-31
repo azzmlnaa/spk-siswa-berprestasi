@@ -1,0 +1,12 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Log files
+*.log
+
+# Optional: VS Code / OS stuff
+.vscode/
+.DS_Store

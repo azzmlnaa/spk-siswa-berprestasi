@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Input Nilai | SPK Siswa Berprestasi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-[Poppins] flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-900 text-gray-300 flex flex-col fixed h-full">
+    <div class="text-center text-white text-xl font-semibold py-5 border-b border-gray-700">
+      🧮 SPK Siswa
+    </div>
+    <nav class="flex-1 p-4 space-y-2">
+      <a href="index.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800">
+        <i class="bi bi-house"></i> <span>Dashboard</span>
+      </a>
+      <a href="siswa.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800">
+        <i class="bi bi-people"></i> <span>Kelola Siswa</span>
+      </a>
+      <a href="kriteria.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800">
+        <i class="bi bi-list-check"></i> <span>Kelola Kriteria</span>
+      </a>
+      <a href="nilai.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-600 text-white">
+        <i class="bi bi-pencil-square"></i> <span>Input Nilai</span>
+      </a>
+      <a href="hasil.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800">
+        <i class="bi bi-bar-chart"></i> <span>Hasil SPK</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 ml-64">
+    <!-- Navbar -->
+    <header class="bg-blue-600 text-white px-6 py-4 shadow flex items-center justify-between">
+      <h1 class="text-lg font-semibold flex items-center gap-2">
+        <i class="bi bi-pencil-square text-xl"></i> Input Nilai Siswa
+      </h1>
+      <a href="login.html">
+    <button class="bg-blue-700 hover:bg-blue-800 px-4 py-1 rounded-lg text-sm">
+        Logout
+    </button>
+</a>
+    </header>
+
+    <!-- Content -->
+    <main class="p-8 space-y-8">
+      <!-- Alert -->
+      <div id="alert-box" class="hidden bg-green-100 border border-green-300 text-green-700 px-4 py-2 rounded-lg">
+        Nilai berhasil disimpan!
+      </div>
+
+      <!-- Pilih Siswa -->
+      <section class="bg-white p-6 rounded-xl shadow">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">🎓 Pilih Siswa</h2>
+        <form id="formPilihSiswa" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div class="md:col-span-10">
+            <select id="selectSiswa" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none">
+              <option value="">-- Pilih Siswa --</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow w-full transition-all">
+              Pilih
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Form Input Nilai -->
+      <section id="formNilai" class="bg-white p-6 rounded-xl shadow hidden">
+        <h2 id="namaSiswa" class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+          Input Nilai untuk <b>Nama Siswa (Kelas)</b>
+        </h2>
+        <form id="formInputNilai" class="space-y-4" autocomplete="off">
+          <div id="daftarKriteria"></div>
+          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow mt-4 transition-all">
+            💾 Simpan Nilai
+          </button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+  const API_URL = "http://localhost:5000/api";
+  const formPilihSiswa = document.getElementById('formPilihSiswa');
+  const formNilaiSection = document.getElementById('formNilai');
+  const daftarKriteria = document.getElementById('daftarKriteria');
+  const namaSiswa = document.getElementById('namaSiswa');
+  const alertBox = document.getElementById('alert-box');
+  const selectSiswa = document.getElementById('selectSiswa');
+
+  // Ambil data siswa
+  async function loadSiswa() {
+    try {
+      const res = await fetch(`${API_URL}/siswa`);
+      const data = await res.json();
+      data.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.id_siswa;
+        option.textContent = `${s.nama_siswa} - ${s.kelas}`;
+        selectSiswa.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Gagal memuat data siswa:", err);
+    }
+  }
+
+  // Ambil data kriteria
+  async function loadKriteria() {
+    try {
+      const res = await fetch(`${API_URL}/kriteria`);
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.error("Gagal memuat kriteria:", err);
+      return [];
+    }
+  }
+
+  // Saat siswa dipilih
+  formPilihSiswa.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = selectSiswa.value;
+    if (!id) return alert("Pilih siswa dulu!");
+
+    const nama = selectSiswa.options[selectSiswa.selectedIndex].text;
+    namaSiswa.innerHTML = `Input Nilai untuk <b>${nama}</b>`;
+
+    const kriteria = await loadKriteria();
+    daftarKriteria.innerHTML = "";
+
+    kriteria.forEach(k => {
+      daftarKriteria.innerHTML += `
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">${k.nama_kriteria} 
+            <small class="text-gray-400">(Bobot: ${k.bobot})</small>
+          </label>
+          <input type="number" step="0.01" name="nilai_${k.id_kriteria}" 
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-400 outline-none" required>
+        </div>
+      `;
+    });
+
+    formNilaiSection.classList.remove('hidden');
+  });
+
+  // Simpan nilai ke API satu per satu
+  document.getElementById('formInputNilai').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id_siswa = selectSiswa.value;
+    const inputs = e.target.querySelectorAll('input');
+    const nilai = [];
+
+    inputs.forEach(input => {
+      const id_kriteria = input.name.split('_')[1];
+      const nilai_kriteria = parseFloat(input.value) || 0;
+      nilai.push({ id_kriteria, nilai: nilai_kriteria });
+    });
+
+    try {
+      for (const item of nilai) {
+        const payload = {
+          id_siswa: id_siswa,
+          id_kriteria: item.id_kriteria,
+          nilai: item.nilai
+        };
+
+        await fetch(`http://localhost:5000/api/nilai`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      alertBox.classList.remove('hidden');
+      alertBox.textContent = "✅ Semua nilai berhasil disimpan!";
+      e.target.reset();
+      setTimeout(() => alertBox.classList.add('hidden'), 3000);
+
+    } catch (err) {
+      console.error("Error simpan nilai:", err);
+      alert("Terjadi kesalahan saat menyimpan nilai.");
+    }
+  });
+
+  function logout() {
+    if (confirm('Yakin mau logout?')) {
+      window.location.href = 'login.html';
+    }
+  }
+
+  loadSiswa();
+</script>
