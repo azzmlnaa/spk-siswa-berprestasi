@@ -43,16 +43,16 @@
         <i class="bi bi-bar-chart"></i> Hasil Perhitungan SAW
       </h1>
       <a href="login.html">
-    <button class="bg-blue-700 hover:bg-blue-800 px-4 py-1 rounded-lg text-sm">
-        Logout
-    </button>
-</a>
-    </header>
+        <button class="bg-blue-700 hover:bg-blue-800 px-4 py-1 rounded-lg text-sm">Logout</button>
+      </a>
     </header>
 
     <main class="p-8 space-y-8">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold text-gray-800">📊 Ranking Siswa Berprestasi</h2>
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">📊 Ranking Siswa Berprestasi</h2>
+          <p id="userInfo" class="text-sm text-gray-500"></p>
+        </div>
         <button id="btnCetakPDF" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
           <i class="bi bi-printer"></i> Cetak PDF
         </button>
@@ -80,12 +80,11 @@
           </table>
         </div>
 
-        <!-- Bagian tanda tangan -->
         <div class="mt-12 flex justify-end pr-20">
           <div class="text-center">
             <p class="mb-1">Mengetahui,</p>
             <p class="font-semibold">Kepala Sekolah</p>
-            <div style="height: 80px;"></div> <!-- ruang untuk tanda tangan -->
+            <div style="height: 80px;"></div>
             <p class="font-semibold underline">(_______________________)</p>
           </div>
         </div>
@@ -95,56 +94,54 @@
 
   <!-- Script -->
   <script>
-    // === Ambil dan tampilkan data hasil dari API ===
+    const token = localStorage.getItem("userToken");
+
     async function loadHasil() {
-      const tbody = document.getElementById("tbodyHasil");
-      try {
-        const response = await fetch("http://localhost:5000/api/hasil");
-        const data = await response.json();
+  const tbody = document.getElementById("tbodyHasil");
+  const token = localStorage.getItem("userToken");
+  try {
+    const response = await fetch("http://localhost:5000/api/hasil", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const result = await response.json();
 
-        if (!Array.isArray(data) || data.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="4" class="text-center py-4 text-gray-500">
-                Tidak ada data hasil perhitungan.
-              </td>
-            </tr>`;
-          return;
-        }
-
-        tbody.innerHTML = data
-          .map(
-            (item, index) => `
-              <tr class="border-b hover:bg-gray-50">
-                <td class="p-2 font-semibold">${index + 1}</td>
-                <td class="p-2">${item.nama_siswa}</td>
-                <td class="p-2">${item.kelas || "-"}</td>
-                <td class="p-2">${item.nilai_akhir.toFixed(4)}</td>
-              </tr>`
-          )
-          .join("");
-      } catch (err) {
-        console.error("Gagal memuat hasil:", err);
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="4" class="text-center py-4 text-red-500">
-              Gagal memuat data hasil dari server.
-            </td>
-          </tr>`;
-      }
+    if (!result.hasil || result.hasil.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-4 text-gray-500">
+            Belum ada data hasil perhitungan untuk Anda.
+          </td>
+        </tr>`;
+      return;
     }
 
-    // === Fungsi Cetak PDF ===
+    tbody.innerHTML = result.hasil.map((item, i) => `
+      <tr class="border-b hover:bg-gray-50">
+        <td class="p-2 font-semibold">${i + 1}</td>
+        <td class="p-2">${item.nama_siswa}</td>
+        <td class="p-2">${item.kelas || "-"}</td>
+        <td class="p-2">${item.nilai_akhir.toFixed(4)}</td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    console.error("Gagal memuat hasil:", err);
+    tbody.innerHTML = `
+      <tr><td colspan="4" class="text-center text-red-500 py-4">
+        Gagal memuat data hasil dari server.
+      </td></tr>`;
+  }
+}
+
+
+    // Cetak PDF
     document.getElementById("btnCetakPDF").addEventListener("click", async () => {
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF("p", "pt", "a4");
       const element = document.getElementById("hasilContainer");
 
-      // Sembunyikan tombol sementara
       const btnCetak = document.getElementById("btnCetakPDF");
       btnCetak.style.display = "none";
 
-      // Konversi div ke gambar
       const canvas = await html2canvas(element, { scale: 2 });
       const imgData = canvas.toDataURL("image/png");
 
@@ -154,14 +151,10 @@
 
       pdf.addImage(imgData, "PNG", 30, 40, imgWidth, imgHeight);
       pdf.save("Laporan_Hasil_SAW.pdf");
-
-      // Tampilkan tombol kembali
       btnCetak.style.display = "inline-block";
     });
 
-    // Tampilkan tanggal cetak
     document.getElementById("tanggalCetak").innerText = new Date().toLocaleDateString("id-ID");
-
     loadHasil();
   </script>
 </body>

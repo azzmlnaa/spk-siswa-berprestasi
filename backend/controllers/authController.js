@@ -58,12 +58,61 @@ export const register = async (req, res) => {
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     await connection.end();
 
+    // ✅ Panggil fungsi untuk membuat tabel default
+    await initUserDatabase(dbName);
+
     res.status(201).json({
-      message: `User ${username} berhasil dibuat dan database baru '${dbName}' telah dibuat`,
+      message: `User ${username} berhasil dibuat dan database '${dbName}' sudah siap digunakan.`,
       id,
       dbName,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};
+
+// Fungsi untuk inisialisasi tabel default di DB user
+const initUserDatabase = async (dbName) => {
+  const mysql = await import("mysql2/promise");
+
+  const connection = await mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: dbName,
+  });
+
+  // Buat tabel siswa
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS siswa (
+      id_siswa INT AUTO_INCREMENT PRIMARY KEY,
+      nama_siswa VARCHAR(100) NOT NULL,
+      kelas VARCHAR(50),
+      jenis_kelamin ENUM('L', 'P') DEFAULT 'L'
+    )
+  `);
+
+  // Buat tabel kriteria
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS kriteria (
+      id_kriteria INT AUTO_INCREMENT PRIMARY KEY,
+      nama_kriteria VARCHAR(100) NOT NULL,
+      bobot DECIMAL(5,2) DEFAULT 0,
+      sifat ENUM('benefit', 'cost') DEFAULT 'benefit'
+    )
+  `);
+
+  // Buat tabel nilai
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS nilai (
+      id_nilai INT AUTO_INCREMENT PRIMARY KEY,
+      id_siswa INT,
+      id_kriteria INT,
+      nilai DECIMAL(5,2),
+      FOREIGN KEY (id_siswa) REFERENCES siswa(id_siswa) ON DELETE CASCADE,
+      FOREIGN KEY (id_kriteria) REFERENCES kriteria(id_kriteria) ON DELETE CASCADE
+    )
+  `);
+
+  await connection.end();
 };

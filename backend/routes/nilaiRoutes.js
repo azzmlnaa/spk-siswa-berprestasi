@@ -1,18 +1,17 @@
 import express from "express";
 import {
   getNilai,
-  getNilaiById,
+  getNilaiBySiswa,
   createNilai,
-  updateNilai,
   deleteNilai,
 } from "../controllers/nilaiController.js";
+import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getNilai);
-router.get("/:id", getNilaiById);
-router.post("/", createNilai);
-router.put("/:id", updateNilai);
-router.delete("/:id", deleteNilai);
+router.get("/", verifyToken, getNilai);
+router.get("/:id_siswa", verifyToken, getNilaiBySiswa);
+router.post("/", verifyToken, createNilai);
+router.delete("/:id", verifyToken, deleteNilai);
 
 export default router;

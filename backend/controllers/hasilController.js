@@ -1,118 +1,83 @@
-// controllers/hasilController.js
+// backend/controllers/hasilController.js
+import jwt from "jsonwebtoken";
+import mysql from "mysql2/promise";
 import { hitungSAW } from "../utils/saw.js";
-import {
-  getDataNilaiDanKriteria,
-  getHasilById,
-  createHasil,
-  updateHasil,
-  deleteHasil
-} from "../models/hasilModel.js";
+import dotenv from "dotenv";
 
-// ✅ GET semua hasil (otomatis dihitung dengan SAW)
+dotenv.config();
+
+const SECRET_KEY = "rahasia_sistem_saw";
+
 export const getHasil = async (req, res) => {
   try {
-    const { dataNilai, dataKriteria } = await getDataNilaiDanKriteria();
+    // 🔹 1. Verifikasi Token
+    const authHeader = req.headers.authorization;
+    if (!authHeader)
+      return res.status(401).json({ message: "Token tidak ditemukan" });
 
-    // 🧩 DEBUG 1: Cek data mentah hasil query database
-    console.log("\n=== 🧩 DEBUG 1: HASIL QUERY DARI DATABASE ===");
-    console.table(dataNilai);
-    console.table(dataKriteria);
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    const { username, role, dbName } = decoded;
 
-    // Pastikan datanya tidak kosong
-    if (!dataNilai || dataNilai.length === 0) {
-      console.warn("⚠️ Tidak ada data nilai yang ditemukan di database!");
-      return res.status(400).json({ message: "Data nilai tidak ditemukan" });
-    }
-    if (!dataKriteria || dataKriteria.length === 0) {
-      console.warn("⚠️ Tidak ada data kriteria yang ditemukan di database!");
-      return res.status(400).json({ message: "Data kriteria tidak ditemukan" });
-    }
+    // 🔹 2. Tentukan database
+    const database = role === "admin" ? process.env.DB_NAME : dbName;
 
-    // 🧩 DEBUG 2: Cek apakah semua nilai siswa terisi atau masih ada yang null
-    const adaNull = dataNilai.some(s =>
-      Object.values(s).some(v => v === null)
-    );
-    if (adaNull) {
-      console.warn("⚠️ Ada nilai siswa yang masih NULL. Mohon periksa tabel `nilai`!");
-    }
-
-    console.log("\n=== 🧮 DEBUG 3: DATA NILAI SETELAH CEK ===");
-    dataNilai.forEach(s => {
-      console.log(`Siswa: ${s.nama_siswa} | Nilai:`, s);
+    const connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database,
     });
 
-    // Jalankan perhitungan SAW
-    console.log("\n=== 🔢 DEBUG 4: MULAI PROSES PERHITUNGAN SAW ===");
-    const hasil = hitungSAW(dataNilai, dataKriteria);
+    // 🔹 3. Ambil semua data kriteria & nilai per siswa
+    const [kriteria] = await connection.query(`
+      SELECT id_kriteria, nama_kriteria, bobot, sifat
+      FROM kriteria
+    `);
 
-    console.log("\n=== ✅ DEBUG 5: HASIL PERHITUNGAN SAW ===");
-    console.table(hasil);
+    const [nilaiRows] = await connection.query(`
+      SELECT 
+        n.id_siswa, 
+        s.nama_siswa, 
+        s.kelas,
+        n.id_kriteria, 
+        n.nilai
+      FROM nilai n
+      JOIN siswa s ON n.id_siswa = s.id_siswa
+    `);
 
-    // ✅ Kirim juga data mentah untuk debugging via Postman
+    await connection.end();
+
+    // 🔹 4. Validasi data
+    if (!nilaiRows.length || !kriteria.length) {
+      return res.status(404).json({
+        message: "Belum ada data nilai atau kriteria untuk perhitungan SAW.",
+      });
+    }
+
+    // 🔹 5. Jalankan perhitungan SAW
+    const hasil = hitungSAW(nilaiRows, kriteria);
+
+    if (!hasil || hasil.length === 0) {
+      return res.status(400).json({
+        message: "Perhitungan SAW gagal dilakukan. Periksa data nilai/kriteria.",
+      });
+    }
+
+    // 🔹 6. Urutkan hasil dari tertinggi ke terendah
+    hasil.sort((a, b) => b.nilai_akhir - a.nilai_akhir);
+
+    // 🔹 7. Kirim hasil ke frontend
     res.json({
-      message: "Berhasil menghitung hasil SAW",
-      totalData: hasil.length,
-      data: hasil,
-      debug: {
-        dataNilai,
-        dataKriteria,
-      },
+      user: username,
+      role,
+      hasil,
     });
   } catch (err) {
-    console.error("❌ Error di getHasil:", err);
+    console.error("❌ Error hasil:", err);
     res.status(500).json({
-      message: "Gagal menghitung hasil SAW",
+      message: "Terjadi kesalahan server.",
       error: err.message,
     });
-  }
-};
-
-// ✅ GET hasil by ID (opsional)
-export const getHasilDetail = async (req, res) => {
-  try {
-    const hasil = await getHasilById(req.params.id);
-    if (!hasil) {
-      return res.status(404).json({ message: "Data tidak ditemukan" });
-    }
-    res.json(hasil);
-  } catch (err) {
-    console.error("❌ Error di getHasilDetail:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// ✅ POST tambah hasil (jika ingin disimpan ke tabel hasil)
-export const createHasilData = async (req, res) => {
-  try {
-    const id = await createHasil(req.body);
-    res.status(201).json({
-      message: "Hasil berhasil ditambahkan",
-      id,
-    });
-  } catch (err) {
-    console.error("❌ Error di createHasilData:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// ✅ PUT update hasil
-export const editHasil = async (req, res) => {
-  try {
-    await updateHasil(req.params.id, req.body);
-    res.json({ message: "Hasil berhasil diubah" });
-  } catch (err) {
-    console.error("❌ Error di editHasil:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// ✅ DELETE hasil
-export const removeHasil = async (req, res) => {
-  try {
-    await deleteHasil(req.params.id);
-    res.json({ message: "Hasil berhasil dihapus" });
-  } catch (err) {
-    console.error("❌ Error di removeHasil:", err);
-    res.status(500).json({ message: err.message });
   }
 };

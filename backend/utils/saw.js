@@ -1,79 +1,69 @@
 // utils/saw.js
 export const hitungSAW = (dataNilai, dataKriteria) => {
   try {
-    if (!dataNilai || !dataKriteria) return [];
+    if (!Array.isArray(dataNilai) || dataNilai.length === 0) return [];
+    if (!Array.isArray(dataKriteria) || dataKriteria.length === 0) return [];
 
-    console.log("=== 🧮 MULAI PROSES NORMALISASI SAW ===");
+    console.log("=== 🧮 MULAI PROSES SAW ===");
 
-    // 1️⃣ Ambil nama kolom kriteria (dari dataNilai)
-    const kriteriaKeys = Object.keys(dataNilai[0]).filter(
-      (key) => key !== "id_siswa" && key !== "nama_siswa"
-    );
-
-    // 2️⃣ Konversi semua nilai ke number
-    const dataConverted = dataNilai.map((siswa) => {
-      const converted = { ...siswa };
-      kriteriaKeys.forEach((k) => {
-        converted[k] = parseFloat(siswa[k]) || 0;
-      });
-      return converted;
+    const bobotMap = {};
+    const sifatMap = {};
+    dataKriteria.forEach((k) => {
+      bobotMap[k.id_kriteria] = parseFloat(k.bobot) || 0;
+      sifatMap[k.id_kriteria] = (k.sifat || "benefit").toLowerCase();
     });
 
-    // 3️⃣ Dapatkan nilai maksimum & minimum untuk tiap kriteria
+    // 🔹 Bentuk ulang data nilai per siswa
+    const siswaMap = {};
+    dataNilai.forEach((n) => {
+      if (!siswaMap[n.id_siswa]) {
+        siswaMap[n.id_siswa] = {
+          id_siswa: n.id_siswa,
+          nama_siswa: n.nama_siswa,
+          kelas: n.kelas,
+          nilai: {},
+        };
+      }
+      siswaMap[n.id_siswa].nilai[n.id_kriteria] = parseFloat(n.nilai) || 0;
+    });
+
+    const siswaList = Object.values(siswaMap);
+
+    // 🔹 Cari nilai maksimum & minimum per kriteria
     const maxValues = {};
     const minValues = {};
-    kriteriaKeys.forEach((key) => {
-      const values = dataConverted.map((s) => s[key]);
-      maxValues[key] = Math.max(...values);
-      minValues[key] = Math.min(...values);
+    Object.keys(bobotMap).forEach((idK) => {
+      const allVals = siswaList.map((s) => s.nilai[idK] || 0);
+      maxValues[idK] = Math.max(...allVals) || 1;
+      minValues[idK] = Math.min(...allVals) || 0;
     });
 
-    console.log("🧩 MAX VALUES:", maxValues);
-    console.log("🧩 MIN VALUES:", minValues);
-
-    // 4️⃣ Normalisasi nilai berdasarkan sifat (benefit/cost)
-    const normalized = dataConverted.map((siswa) => {
-      const norm = { ...siswa };
-      kriteriaKeys.forEach((key) => {
-        const kriteria = dataKriteria.find((k) =>
-          k.nama_kriteria.toLowerCase().includes(key.replace("nilai_", "").toLowerCase())
-        );
-
-        if (!kriteria) {
-          norm[key] = 0;
-        } else if (kriteria.sifat === "benefit") {
-          norm[key] = siswa[key] / maxValues[key];
-        } else if (kriteria.sifat === "cost") {
-          norm[key] = minValues[key] / siswa[key];
-        }
-      });
-      return norm;
-    });
-
-    console.log("📊 DATA NORMALISASI:");
-    console.table(normalized);
-
-    // 5️⃣ Hitung total nilai preferensi (Σ bobot * normalisasi)
-    const hasil = normalized.map((siswa) => {
+    // 🔹 Normalisasi & hitung nilai akhir
+    const hasil = siswaList.map((s) => {
       let total = 0;
-      kriteriaKeys.forEach((key) => {
-        const kriteria = dataKriteria.find((k) =>
-          k.nama_kriteria.toLowerCase().includes(key.replace("nilai_", "").toLowerCase())
-        );
-        const bobot = parseFloat(kriteria?.bobot) || 0;
-        total += bobot * siswa[key];
+      Object.keys(bobotMap).forEach((idK) => {
+        const raw = s.nilai[idK] || 0;
+        const bobot = bobotMap[idK];
+        const sifat = sifatMap[idK];
+        let norm = 0;
+
+        if (sifat === "benefit") norm = raw / maxValues[idK];
+        else if (sifat === "cost") norm = minValues[idK] / raw;
+
+        total += norm * bobot;
       });
 
       return {
-        id_siswa: String(siswa.id_siswa),
-        nama_siswa: siswa.nama_siswa,
-        total: parseFloat(total.toFixed(4)),
+        id_siswa: s.id_siswa,
+        nama_siswa: s.nama_siswa,
+        kelas: s.kelas,
+        nilai_akhir: parseFloat(total.toFixed(4)),
       };
     });
 
-    // 6️⃣ Urutkan dari terbesar ke terkecil
-    hasil.sort((a, b) => b.total - a.total);
+    hasil.sort((a, b) => b.nilai_akhir - a.nilai_akhir);
 
+    console.log("✅ HASIL SAW:", hasil);
     return hasil;
   } catch (err) {
     console.error("❌ Error di fungsi hitungSAW:", err);

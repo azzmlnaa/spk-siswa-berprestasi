@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Input Nilai | SPK Siswa Berprestasi</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100 font-[Poppins] flex min-h-screen">
 
@@ -33,7 +33,7 @@
     </nav>
   </aside>
 
-  <!-- Main Content -->
+  <!-- Main -->
   <div class="flex-1 ml-64">
     <!-- Navbar -->
     <header class="bg-blue-600 text-white px-6 py-4 shadow flex items-center justify-between">
@@ -41,159 +41,267 @@
         <i class="bi bi-pencil-square text-xl"></i> Input Nilai Siswa
       </h1>
       <a href="login.html">
-    <button class="bg-blue-700 hover:bg-blue-800 px-4 py-1 rounded-lg text-sm">
-        Logout
-    </button>
-</a>
+        <button class="bg-blue-700 hover:bg-blue-800 px-4 py-1 rounded-lg text-sm">
+          Logout
+        </button>
+      </a>
     </header>
 
     <!-- Content -->
     <main class="p-8 space-y-8">
-      <!-- Alert -->
-      <div id="alert-box" class="hidden bg-green-100 border border-green-300 text-green-700 px-4 py-2 rounded-lg">
-        Nilai berhasil disimpan!
-      </div>
-
-      <!-- Pilih Siswa -->
+      <!-- Tabel Siswa -->
       <section class="bg-white p-6 rounded-xl shadow">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">🎓 Pilih Siswa</h2>
-        <form id="formPilihSiswa" class="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div class="md:col-span-10">
-            <select id="selectSiswa" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none">
-              <option value="">-- Pilih Siswa --</option>
-            </select>
-          </div>
-          <div class="md:col-span-2">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow w-full transition-all">
-              Pilih
-            </button>
-          </div>
-        </form>
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+          📋 Daftar Siswa
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full border border-gray-200 text-sm">
+            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+              <tr>
+                <th class="px-4 py-2 border">No</th>
+                <th class="px-4 py-2 border">Nama Siswa</th>
+                <th class="px-4 py-2 border">Kelas</th>
+                <th class="px-4 py-2 border text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tabelSiswa" class="text-gray-700 divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
       </section>
 
       <!-- Form Input Nilai -->
-      <section id="formNilai" class="bg-white p-6 rounded-xl shadow hidden">
-        <h2 id="namaSiswa" class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-          Input Nilai untuk <b>Nama Siswa (Kelas)</b>
+      <section id="formNilaiSection" class="bg-white p-6 rounded-xl shadow hidden">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+          🧾 Input Nilai untuk <span id="namaSiswaLabel" class="text-blue-600"></span>
         </h2>
-        <form id="formInputNilai" class="space-y-4" autocomplete="off">
-          <div id="daftarKriteria"></div>
-          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow mt-4 transition-all">
-            💾 Simpan Nilai
-          </button>
+
+        <!-- Form Tambah Nilai -->
+        <form id="formNilai" class="space-y-4">
+          <input type="hidden" id="id_siswa" />
+          <table class="min-w-full border border-gray-200 text-sm mb-4">
+            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+              <tr>
+                <th class="px-4 py-2 border">No</th>
+                <th class="px-4 py-2 border">Kriteria</th>
+                <th class="px-4 py-2 border">Nilai (0–100)</th>
+              </tr>
+            </thead>
+            <tbody id="tabelKriteria"></tbody>
+          </table>
+
+          <div class="text-right pt-2">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow transition-all">
+              <i class="bi bi-save"></i> Simpan Semua Nilai
+            </button>
+          </div>
         </form>
+
+        <!-- Tabel Nilai yang sudah diinput -->
+        <div class="mt-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+            📊 Nilai yang Sudah Dimasukkan
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-200 text-sm">
+              <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                <tr>
+                  <th class="px-4 py-2 border">No</th>
+                  <th class="px-4 py-2 border">Kriteria</th>
+                  <th class="px-4 py-2 border">Nilai</th>
+                  <th class="px-4 py-2 border text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tabelNilai"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
     </main>
   </div>
 
   <script>
-  const API_URL = "http://localhost:5000/api";
-  const formPilihSiswa = document.getElementById('formPilihSiswa');
-  const formNilaiSection = document.getElementById('formNilai');
-  const daftarKriteria = document.getElementById('daftarKriteria');
-  const namaSiswa = document.getElementById('namaSiswa');
-  const alertBox = document.getElementById('alert-box');
-  const selectSiswa = document.getElementById('selectSiswa');
+  const baseURL = "http://localhost:5000/api";
+  const token = localStorage.getItem("userToken");
 
-  // Ambil data siswa
+  async function fetchJSON(url, options = {}) {
+    const res = await fetch(url, options);
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error(`Response bukan JSON valid dari ${url}`);
+    }
+    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}: ${res.statusText}`);
+    return data;
+  }
+
+  // 🔹 Load siswa
   async function loadSiswa() {
+    const tbody = document.getElementById("tabelSiswa");
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">⏳ Memuat data...</td></tr>`;
     try {
-      const res = await fetch(`${API_URL}/siswa`);
-      const data = await res.json();
-      data.forEach(s => {
-        const option = document.createElement('option');
-        option.value = s.id_siswa;
-        option.textContent = `${s.nama_siswa} - ${s.kelas}`;
-        selectSiswa.appendChild(option);
+      const res = await fetchJSON(`${baseURL}/siswa`, {
+        headers: { "Authorization": `Bearer ${token}` },
       });
+      const siswa = Array.isArray(res) ? res : res.data || [];
+      tbody.innerHTML = siswa.length
+        ? siswa.map((s, i) => `
+          <tr class="hover:bg-gray-50 text-center">
+            <td class="border px-4 py-2">${i + 1}</td>
+            <td class="border px-4 py-2 font-medium">${s.nama_siswa}</td>
+            <td class="border px-4 py-2">${s.kelas || "-"}</td>
+            <td class="border px-4 py-2">
+              <button onclick="pilihSiswa(${s.id_siswa}, '${s.nama_siswa.replace(/'/g, "\\'")}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                <i class="bi bi-pencil"></i> Input Nilai
+              </button>
+            </td>
+          </tr>`).join("")
+        : `<tr><td colspan="4" class="text-center text-gray-500 py-4">Belum ada data siswa</td></tr>`;
     } catch (err) {
-      console.error("Gagal memuat data siswa:", err);
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 py-4">${err.message}</td></tr>`;
     }
   }
 
-  // Ambil data kriteria
+  // 🔹 Ketika pilih siswa
+  async function pilihSiswa(id, nama) {
+    document.getElementById("id_siswa").value = id;
+    document.getElementById("namaSiswaLabel").textContent = nama;
+    document.getElementById("formNilaiSection").classList.remove("hidden");
+    await loadKriteria();
+    await loadNilai(id);
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  }
+
+  // 🔹 Load semua kriteria jadi tabel input
   async function loadKriteria() {
+    const tbody = document.getElementById("tabelKriteria");
+    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-gray-500">⏳ Memuat kriteria...</td></tr>`;
     try {
-      const res = await fetch(`${API_URL}/kriteria`);
-      const data = await res.json();
-      return data;
+      const res = await fetchJSON(`${baseURL}/kriteria`, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      const data = Array.isArray(res) ? res : res.data || [];
+      tbody.innerHTML = data.length
+        ? data.map((k, i) => `
+          <tr class="text-center">
+            <td class="border px-4 py-2">${i + 1}</td>
+            <td class="border px-4 py-2 text-left">${k.nama_kriteria}</td>
+            <td class="border px-4 py-2">
+              <input type="number" name="nilai_kriteria" data-id="${k.id_kriteria}"
+                min="0" max="100"
+                class="border border-gray-300 rounded-lg w-24 px-2 py-1 text-center focus:ring-2 focus:ring-blue-400 outline-none" />
+            </td>
+          </tr>`).join("")
+        : `<tr><td colspan="3" class="text-center text-gray-500 py-4">Belum ada kriteria</td></tr>`;
     } catch (err) {
-      console.error("Gagal memuat kriteria:", err);
-      return [];
+      tbody.innerHTML = `<tr><td colspan="3" class="text-center text-red-500 py-4">${err.message}</td></tr>`;
     }
   }
 
-  // Saat siswa dipilih
-  formPilihSiswa.addEventListener('submit', async e => {
+  // 🔹 Simpan semua nilai baru
+  document.getElementById("formNilai").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const id = selectSiswa.value;
-    if (!id) return alert("Pilih siswa dulu!");
+    const id_siswa = document.getElementById("id_siswa").value;
+    const inputs = document.querySelectorAll("input[name='nilai_kriteria']");
+    const nilaiArray = Array.from(inputs)
+      .map(input => ({
+        id_kriteria: input.dataset.id,
+        nilai: input.value.trim(),
+      }))
+      .filter(n => n.nilai !== "");
 
-    const nama = selectSiswa.options[selectSiswa.selectedIndex].text;
-    namaSiswa.innerHTML = `Input Nilai untuk <b>${nama}</b>`;
-
-    const kriteria = await loadKriteria();
-    daftarKriteria.innerHTML = "";
-
-    kriteria.forEach(k => {
-      daftarKriteria.innerHTML += `
-        <div>
-          <label class="block text-sm text-gray-600 mb-1">${k.nama_kriteria} 
-            <small class="text-gray-400">(Bobot: ${k.bobot})</small>
-          </label>
-          <input type="number" step="0.01" name="nilai_${k.id_kriteria}" 
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-400 outline-none" required>
-        </div>
-      `;
-    });
-
-    formNilaiSection.classList.remove('hidden');
-  });
-
-  // Simpan nilai ke API satu per satu
-  document.getElementById('formInputNilai').addEventListener('submit', async e => {
-    e.preventDefault();
-    const id_siswa = selectSiswa.value;
-    const inputs = e.target.querySelectorAll('input');
-    const nilai = [];
-
-    inputs.forEach(input => {
-      const id_kriteria = input.name.split('_')[1];
-      const nilai_kriteria = parseFloat(input.value) || 0;
-      nilai.push({ id_kriteria, nilai: nilai_kriteria });
-    });
+    if (nilaiArray.length === 0) {
+      alert("⚠️ Isi minimal satu nilai sebelum menyimpan!");
+      return;
+    }
 
     try {
-      for (const item of nilai) {
-        const payload = {
-          id_siswa: id_siswa,
-          id_kriteria: item.id_kriteria,
-          nilai: item.nilai
-        };
-
-        await fetch(`http://localhost:5000/api/nilai`, {
+      for (const n of nilaiArray) {
+        await fetch(`${baseURL}/nilai`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id_siswa,
+            id_kriteria: n.id_kriteria,
+            nilai: n.nilai,
+          }),
         });
       }
-
-      alertBox.classList.remove('hidden');
-      alertBox.textContent = "✅ Semua nilai berhasil disimpan!";
-      e.target.reset();
-      setTimeout(() => alertBox.classList.add('hidden'), 3000);
-
+      alert("✅ Semua nilai berhasil disimpan!");
+      await loadNilai(id_siswa);
     } catch (err) {
-      console.error("Error simpan nilai:", err);
-      alert("Terjadi kesalahan saat menyimpan nilai.");
+      alert("❌ Gagal menyimpan nilai: " + err.message);
     }
   });
 
-  function logout() {
-    if (confirm('Yakin mau logout?')) {
-      window.location.href = 'login.html';
+  // 🔹 Load nilai yang sudah ada
+  async function loadNilai(id_siswa) {
+    const tbody = document.getElementById("tabelNilai");
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">⏳ Memuat nilai...</td></tr>`;
+    try {
+      const res = await fetchJSON(`${baseURL}/nilai/${id_siswa}`, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      const data = res.data || [];
+      tbody.innerHTML = data.length
+        ? data.map((n, i) => `
+          <tr class="text-center">
+            <td class="border px-4 py-2">${i + 1}</td>
+            <td class="border px-4 py-2">${n.nama_kriteria}</td>
+            <td class="border px-4 py-2">${n.nilai}</td>
+            <td class="border px-4 py-2">
+              <button onclick="editNilai(${n.id_nilai}, ${n.nilai})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"><i class="bi bi-pencil"></i> Edit</button>
+              <button onclick="hapusNilai(${n.id_nilai})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs"><i class="bi bi-trash"></i> Hapus</button>
+            </td>
+          </tr>`).join("")
+        : `<tr><td colspan="4" class="text-center text-gray-500 py-4">Belum ada nilai untuk siswa ini</td></tr>`;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 py-4">${err.message}</td></tr>`;
     }
   }
 
-  loadSiswa();
-</script>
+  // 🔹 Edit nilai
+  async function editNilai(id_nilai, nilaiLama) {
+    const nilaiBaru = prompt("Masukkan nilai baru (0–100):", nilaiLama);
+    if (nilaiBaru === null || nilaiBaru === "") return;
+    try {
+      await fetch(`${baseURL}/nilai/${id_nilai}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ nilai: nilaiBaru }),
+      });
+      alert("✅ Nilai berhasil diperbarui!");
+      const id_siswa = document.getElementById("id_siswa").value;
+      await loadNilai(id_siswa);
+    } catch (err) {
+      alert("❌ Gagal mengedit nilai: " + err.message);
+    }
+  }
+
+  // 🔹 Hapus nilai
+  async function hapusNilai(id_nilai) {
+    if (!confirm("Yakin ingin menghapus nilai ini?")) return;
+    try {
+      await fetch(`${baseURL}/nilai/${id_nilai}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      alert("🗑️ Nilai berhasil dihapus!");
+      const id_siswa = document.getElementById("id_siswa").value;
+      await loadNilai(id_siswa);
+    } catch (err) {
+      alert("❌ Gagal menghapus nilai: " + err.message);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => loadSiswa());
+  </script>
+</body>
+</html>

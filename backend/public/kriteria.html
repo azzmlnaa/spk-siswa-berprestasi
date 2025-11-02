@@ -103,80 +103,111 @@
     </main>
   </div>
 
-  <script>
-    const baseURL = "http://localhost:5000/api/kriteria";
+ <script>
+  const baseURL = "http://localhost:5000/api/kriteria";
+  const token = localStorage.getItem("userToken");
 
-    // Load data kriteria
-    async function loadKriteria() {
-      try {
-        const res = await fetch(baseURL);
-        const data = await res.json();
-        const tbody = document.getElementById("tabelKriteria");
-        tbody.innerHTML = "";
+  // 🔹 Ambil data kriteria berdasarkan user login
+  async function loadKriteria() {
+    try {
+      const res = await fetch(baseURL, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      const result = await res.json();
 
-        data.forEach((item, i) => {
-          tbody.innerHTML += `
-            <tr class="hover:bg-gray-50 text-center">
-              <td class="px-4 py-2 border">${i + 1}</td>
-              <td class="px-4 py-2 border font-medium">${item.nama_kriteria}</td>
-              <td class="px-4 py-2 border">${item.bobot}</td>
-              <td class="px-4 py-2 border">
-                ${
-                  item.sifat === "benefit"
-                    ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Benefit</span>'
-                    : '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">Cost</span>'
-                }
-              </td>
-              <td class="px-4 py-2 border">
-                <button onclick="hapusKriteria(${item.id_kriteria})"
-                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition">
-                  <i class="bi bi-trash"></i> Hapus
-                </button>
-              </td>
-            </tr>
-          `;
-        });
-      } catch (err) {
-        console.error("Gagal memuat data:", err);
+      const data = result.data || []; // ambil field 'data' dari backend
+      const tbody = document.getElementById("tabelKriteria");
+      tbody.innerHTML = "";
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-4">Belum ada data kriteria</td></tr>`;
+        return;
       }
+
+      data.forEach((item, i) => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50 text-center">
+            <td class="px-4 py-2 border">${i + 1}</td>
+            <td class="px-4 py-2 border font-medium">${item.nama_kriteria}</td>
+            <td class="px-4 py-2 border">${item.bobot}</td>
+            <td class="px-4 py-2 border">
+              ${
+                item.sifat === "benefit"
+                  ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Benefit</span>'
+                  : '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">Cost</span>'
+              }
+            </td>
+            <td class="px-4 py-2 border">
+              <button onclick="hapusKriteria(${item.id_kriteria})"
+                      class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition">
+                <i class="bi bi-trash"></i> Hapus
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    } catch (err) {
+      console.error("Gagal memuat data:", err);
     }
+  }
 
-    // Tambah kriteria
-    document.getElementById("formKriteria").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const nama = document.getElementById("nama_kriteria").value;
-      const bobot = document.getElementById("bobot").value;
-      const sifat = document.getElementById("sifat").value;
+  // 🔹 Tambah kriteria
+  document.getElementById("formKriteria").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nama = document.getElementById("nama_kriteria").value.trim();
+    const bobot = document.getElementById("bobot").value.trim();
+    const sifat = document.getElementById("sifat").value;
 
+    try {
       const res = await fetch(baseURL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ nama_kriteria: nama, bobot, sifat })
       });
 
+      const data = await res.json();
       if (res.ok) {
-        alert("✅ Kriteria berhasil ditambahkan!");
+        alert("✅ " + data.message);
         e.target.reset();
         loadKriteria();
       } else {
-        alert("❌ Gagal menambah kriteria.");
+        alert("❌ " + (data.message || "Gagal menambah kriteria"));
       }
-    });
-
-    // Hapus kriteria
-    async function hapusKriteria(id) {
-      if (confirm("Yakin mau hapus kriteria ini?")) {
-        const res = await fetch(`${baseURL}/${id}`, { method: "DELETE" });
-        if (res.ok) {
-          alert("🗑️ Kriteria berhasil dihapus!");
-          loadKriteria();
-        } else {
-          alert("❌ Gagal menghapus kriteria.");
-        }
-      }
+    } catch (err) {
+      console.error("Error:", err);
+      alert("❌ Terjadi kesalahan saat menambah kriteria.");
     }
+  });
 
-    loadKriteria();
-  </script>
+  // 🔹 Hapus kriteria
+  async function hapusKriteria(id) {
+    if (!confirm("Yakin mau hapus kriteria ini?")) return;
+
+    try {
+      const res = await fetch(`${baseURL}/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("🗑️ " + data.message);
+        loadKriteria();
+      } else {
+        alert("❌ " + (data.message || "Gagal menghapus kriteria."));
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      alert("❌ Terjadi kesalahan saat menghapus.");
+    }
+  }
+
+  // Jalankan pertama kali
+  document.addEventListener("DOMContentLoaded", loadKriteria);
+</script>
+
 </body>
 </html>
